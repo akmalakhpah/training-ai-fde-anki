@@ -70,7 +70,7 @@ def stats(deck_id: int) -> dict:
     return services.deck_stats(deck_id)
 
 
-@router.post("/decks/{deck_id}/generate", response_model=list[CardDraft])
+@router.post("/decks/{deck_id}/generates", response_model=list[CardDraft])
 def generate(deck_id: int, payload: GenerateRequest) -> list[dict]:
     if db.get_deck(deck_id) is None:
         raise HTTPException(status_code=404, detail="Deck not found")
