@@ -95,5 +95,8 @@ cp .env.example .env
 # then edit .env and set ANTHROPIC_API_KEY=your-key
 ```
 
+Get an API key from the Claude Console:
+**https://platform.claude.com/settings/workspaces/default/keys**
+
 The endpoint defaults to Claude Haiku 4.5 (cheap and fast for card generation); you
 can bump it to Sonnet in [app/ai.py](app/ai.py) for richer cards.
