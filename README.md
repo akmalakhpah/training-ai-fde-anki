@@ -48,9 +48,10 @@ pip install -e .
 uvicorn app.main:app --reload
 ```
 
-The app starts on http://127.0.0.1:8000 (interactive docs at
-http://127.0.0.1:8000/docs). On first run it creates `anki.db` and seeds a couple of
-sample decks.
+Then open http://127.0.0.1:8000 for a simple web UI (create decks, add cards, study,
+view stats, and generate cards). The interactive API docs are at
+http://127.0.0.1:8000/docs. On first run the app creates `anki.db` and seeds a couple
+of sample decks.
 
 ### Using the API
 

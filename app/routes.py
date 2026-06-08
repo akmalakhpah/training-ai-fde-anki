@@ -23,6 +23,11 @@ from .models import (
 router = APIRouter()
 
 
+@router.get("/decks", response_model=list[Deck])
+def list_decks() -> list[dict]:
+    return db.all_decks()
+
+
 @router.post("/decks", response_model=Deck)
 def create_deck(payload: DeckCreate) -> dict:
     return db.insert_deck(payload.name)

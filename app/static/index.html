@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Anki</title>
+<style>
+  :root {
+    --bg: #0f1220; --panel: #1a1f33; --ink: #e9ecf5; --muted: #97a0bd;
+    --line: #2a3150; --accent: #6c8cff; --good: #3fb37f; --bad: #e0666f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  header h1 { font-size: 20px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header a { color: var(--accent); text-decoration: none; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px; display: grid; gap: 18px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .panel h2 { margin: 0 0 12px; font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input, select, button {
+    font: inherit; border-radius: 8px; border: 1px solid var(--line);
+    background: #11152a; color: var(--ink); padding: 8px 10px;
+  }
+  input, select { min-width: 0; }
+  input:focus, select:focus { outline: 2px solid var(--accent); }
+  button { cursor: pointer; background: #232a45; border-color: var(--line); }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #0b0e1a; font-weight: 600; }
+  .grow { flex: 1; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 680px) { .grid2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .muted { color: var(--muted); }
+  .stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .err { color: var(--bad); background: #2a1a20; border: 1px solid #5a2a33; border-radius: 8px; padding: 10px; white-space: pre-wrap; }
+  .card-face { font-size: 22px; text-align: center; padding: 28px 12px; }
+  .rate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .rate button { padding: 12px 0; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #232a45; color: var(--muted); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧠 AI Anki</h1>
+  <span class="sub">A flashcard study app · API docs at <a href="/docs">/docs</a></span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Deck</h2>
+    <div class="row">
+      <select id="deckSelect" class="grow"></select>
+      <button id="refreshBtn">Refresh</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input id="newDeckName" class="grow" placeholder="New deck name…" />
+      <button id="createDeckBtn" class="primary">Create deck</button>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Cards</h2>
+      <div id="cards"><p class="muted">Pick a deck.</p></div>
+      <div class="row" style="margin-top:12px">
+        <input id="cardFront" class="grow" placeholder="Front" />
+        <input id="cardBack" class="grow" placeholder="Back" />
+        <button id="addCardBtn" class="primary">Add</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Stats</h2>
+      <div id="stats"><p class="muted">Pick a deck.</p></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Study (due cards)</h2>
+    <div id="studyIdle"><button id="startStudyBtn" class="primary">Start studying</button></div>
+    <div id="studyArea" class="hidden">
+      <div class="row" style="justify-content:space-between">
+        <span class="pill" id="studyProgress"></span>
+        <button id="endStudyBtn">Stop</button>
+      </div>
+      <div class="card-face" id="studyFront"></div>
+      <div class="card-face muted hidden" id="studyBack"></div>
+      <div id="studyReveal"><button id="revealBtn" class="primary" style="width:100%">Show answer</button></div>
+      <div class="rate hidden" id="studyRate">
+        <button data-rating="again">Again</button>
+        <button data-rating="hard">Hard</button>
+        <button data-rating="good">Good</button>
+        <button data-rating="easy">Easy</button>
+      </div>
+    </div>
+    <div id="studyDone" class="hidden"><p class="muted">No more due cards. 🎉</p></div>
+  </section>
+
+  <section class="panel">
+    <h2>Generate cards with Claude</h2>
+    <div class="row">
+      <input id="genTopic" class="grow" placeholder="Topic, e.g. 'Spanish food vocabulary'" />
+      <input id="genCount" type="number" min="1" max="20" value="5" style="width:80px" />
+      <button id="generateBtn" class="primary">Generate</button>
+    </div>
+    <p class="muted" style="margin:10px 0 0">Needs <code>ANTHROPIC_API_KEY</code>; returns 503 without one.</p>
+    <div id="genResult"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const deckSelect = $("deckSelect");
+
+function currentDeck() { return deckSelect.value ? Number(deckSelect.value) : null; }
+
+async function api(method, path, body) {
+  const opts = { method, headers: {} };
+  if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const res = await fetch(path, opts);
+  let data = null;
+  try { data = await res.json(); } catch (_) {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function loadDecks(selectId) {
+  const { data } = await api("GET", "/decks");
+  deckSelect.innerHTML = "";
+  (data || []).forEach((d) => {
+    const o = document.createElement("option");
+    o.value = d.id; o.textContent = `#${d.id} · ${d.name}`;
+    deckSelect.appendChild(o);
+  });
+  if (selectId) deckSelect.value = String(selectId);
+  if (deckSelect.value) refreshDeck();
+}
+
+async function refreshDeck() {
+  const id = currentDeck();
+  if (!id) return;
+  loadCards(id);
+  loadStats(id);
+}
+
+async function loadCards(id) {
+  const { ok, data } = await api("GET", `/decks/${id}`);
+  if (!ok) { $("cards").innerHTML = `<div class="err">Failed to load deck.</div>`; return; }
+  const cards = data.cards || [];
+  if (!cards.length) { $("cards").innerHTML = `<p class="muted">No cards yet.</p>`; return; }
+  const rows = cards.map((c) =>
+    `<tr><td>${c.id}</td><td>${esc(c.front)}</td><td>${esc(c.back)}</td><td class="muted">${c.next_due}</td></tr>`
+  ).join("");
+  $("cards").innerHTML =
+    `<table><thead><tr><th>#</th><th>Front</th><th>Back</th><th>Next due</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function loadStats(id) {
+  const { ok, status, data } = await api("GET", `/decks/${id}/stats`);
+  if (!ok) {
+    $("stats").innerHTML =
+      `<div class="err">Stats request failed (HTTP ${status}).\n${data ? JSON.stringify(data) : "Server error"}</div>`;
+    return;
+  }
+  $("stats").innerHTML = `
+    <div class="stat"><span>Total cards</span><b>${data.total_cards}</b></div>
+    <div class="stat"><span>Due now</span><b>${data.due_count}</b></div>
+    <div class="stat"><span>Reviews done</span><b>${data.reviews_done}</b></div>
+    <div class="stat"><span>Retention</span><b>${(data.retention * 100).toFixed(0)}%</b></div>`;
+}
+
+// --- study ---------------------------------------------------------------
+let queue = [], idx = 0;
+
+async function startStudy() {
+  const id = currentDeck();
+  if (!id) return;
+  const { ok, data } = await api("GET", `/decks/${id}/due`);
+  queue = ok ? (data || []) : [];
+  idx = 0;
+  $("studyIdle").classList.add("hidden");
+  $("studyDone").classList.add("hidden");
+  $("studyArea").classList.remove("hidden");
+  showCard();
+}
+
+function showCard() {
+  if (idx >= queue.length) { endStudy(true); return; }
+  const c = queue[idx];
+  $("studyProgress").textContent = `Card ${idx + 1} of ${queue.length}`;
+  $("studyFront").textContent = c.front;
+  $("studyBack").textContent = c.back;
+  $("studyBack").classList.add("hidden");
+  $("studyReveal").classList.remove("hidden");
+  $("studyRate").classList.add("hidden");
+}
+
+function reveal() {
+  $("studyBack").classList.remove("hidden");
+  $("studyReveal").classList.add("hidden");
+  $("studyRate").classList.remove("hidden");
+}
+
+async function rate(rating) {
+  const c = queue[idx];
+  await api("POST", `/cards/${c.id}/review`, { rating });
+  idx += 1;
+  showCard();
+  refreshDeck();
+}
+
+function endStudy(done) {
+  $("studyArea").classList.add("hidden");
+  $("studyIdle").classList.toggle("hidden", !!done);
+  $("studyDone").classList.toggle("hidden", !done);
+}
+
+// --- generate ------------------------------------------------------------
+async function generate() {
+  const id = currentDeck();
+  if (!id) return;
+  const topic = $("genTopic").value.trim();
+  const count = Number($("genCount").value) || 1;
+  if (!topic) return;
+  $("genResult").innerHTML = `<p class="muted">Generating…</p>`;
+  const { ok, status, data } = await api("POST", `/decks/${id}/generate`, { topic, count });
+  if (!ok) {
+    $("genResult").innerHTML =
+      `<div class="err">HTTP ${status}: ${data ? (data.detail || JSON.stringify(data)) : "error"}</div>`;
+    return;
+  }
+  const items = (data || []).map((c) => `<li><b>${esc(c.front)}</b> → ${esc(c.back)}</li>`).join("");
+  $("genResult").innerHTML = `<p class="muted">Added ${data.length} card(s):</p><ul>${items}</ul>`;
+  refreshDeck();
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m])); }
+
+// --- wiring --------------------------------------------------------------
+deckSelect.addEventListener("change", refreshDeck);
+$("refreshBtn").addEventListener("click", () => loadDecks(currentDeck()));
+$("createDeckBtn").addEventListener("click", async () => {
+  const name = $("newDeckName").value.trim();
+  if (!name) return;
+  const { ok, data } = await api("POST", "/decks", { name });
+  if (ok) { $("newDeckName").value = ""; loadDecks(data.id); }
+});
+$("addCardBtn").addEventListener("click", async () => {
+  const id = currentDeck();
+  const front = $("cardFront").value.trim(), back = $("cardBack").value.trim();
+  if (!id || !front || !back) return;
+  const { ok } = await api("POST", `/decks/${id}/cards`, { front, back });
+  if (ok) { $("cardFront").value = ""; $("cardBack").value = ""; refreshDeck(); }
+});
+$("startStudyBtn").addEventListener("click", startStudy);
+$("revealBtn").addEventListener("click", reveal);
+$("endStudyBtn").addEventListener("click", () => endStudy(false));
+$("studyRate").addEventListener("click", (e) => { if (e.target.dataset.rating) rate(e.target.dataset.rating); });
+$("generateBtn").addEventListener("click", generate);
+
+loadDecks();
+</script>
+</body>
+</html>

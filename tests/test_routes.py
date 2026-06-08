@@ -19,6 +19,14 @@ def test_create_and_get_deck(client):
     assert fetched.json()["cards"] == []
 
 
+def test_list_decks(client):
+    res = client.get("/decks")
+    assert res.status_code == 200
+    names = [d["name"] for d in res.json()]
+    assert "Spanish Basics" in names
+    assert "Empty Deck (new)" in names
+
+
 def test_get_seeded_deck_has_cards(client):
     res = client.get("/decks/1")
     assert res.status_code == 200

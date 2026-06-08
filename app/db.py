@@ -50,6 +50,12 @@ def get_deck(deck_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+def all_decks() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute("SELECT * FROM decks ORDER BY id").fetchall()
+    return [dict(r) for r in rows]
+
+
 # --- cards -----------------------------------------------------------------
 
 
