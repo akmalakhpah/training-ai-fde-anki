@@ -84,6 +84,15 @@ pytest
 The suite runs with no API key and makes no network calls (the Claude endpoint is
 mocked in tests).
 
+## Continuous integration (CI)
+
+GitHub Actions runs the test suite on every push and pull request. The workflow is
+[.github/workflows/ci.yml](.github/workflows/ci.yml): it checks out the code, sets up
+Python 3.12, runs `pip install -e .`, and runs `pytest` — no API key required.
+
+In the Week 1 project you'll see this in action: add a failing test for a bug *before*
+fixing it and CI goes red, then push the fix and watch it go green.
+
 ## API-key setup (optional)
 
 Everything above works without an API key. Only the `POST /decks/{id}/generate`
