@@ -23,7 +23,7 @@ def test_list_decks(client):
     res = client.get("/decks")
     assert res.status_code == 200
     names = [d["name"] for d in res.json()]
-    assert "Spanish Basics" in names
+    assert "AI Glossary" in names
     assert "Empty Deck (new)" in names
 
 
@@ -31,8 +31,8 @@ def test_get_seeded_deck_has_cards(client):
     res = client.get("/decks/1")
     assert res.status_code == 200
     body = res.json()
-    assert body["name"] == "Spanish Basics"
-    assert len(body["cards"]) == 5
+    assert body["name"] == "AI Glossary"
+    assert len(body["cards"]) == 6
 
 
 def test_get_missing_deck_returns_404(client):
@@ -70,7 +70,7 @@ def test_stats_on_reviewed_deck(client):
     res = client.get("/decks/1/stats")
     assert res.status_code == 200
     body = res.json()
-    assert body["total_cards"] == 5
+    assert body["total_cards"] == 6
     assert body["reviews_done"] == 5
     # 3 of 5 seeded reviews were correct (good/easy).
     assert body["retention"] == 0.6

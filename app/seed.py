@@ -2,7 +2,7 @@
 
 The seed is designed to make both planted bugs observable out of the box:
 
-* Deck 1, "Spanish Basics", has one card due yesterday and one due tomorrow, so
+* Deck 1, "AI Glossary", has one card due yesterday and one due tomorrow, so
   ``GET /decks/1/due`` reveals whether the due check points the right direction.
 * Deck 2, "Empty Deck (new)", has no cards and no reviews, so
   ``GET /decks/2/stats`` exercises the retention calculation on an empty deck.
@@ -14,12 +14,37 @@ from datetime import date, timedelta
 
 from . import db
 
-SPANISH_CARDS = [
-    ("hola", "hello"),
-    ("gracias", "thank you"),
-    ("por favor", "please"),
-    ("adiós", "goodbye"),
-    ("buenos días", "good morning"),
+GLOSSARY_CARDS = [
+    (
+        "LLM",
+        "Large Language Model — a neural network trained on huge amounts of text "
+        "to understand and generate language.",
+    ),
+    (
+        "RAG",
+        "Retrieval-Augmented Generation — fetch relevant documents and feed them to "
+        "an LLM as context before it answers.",
+    ),
+    (
+        "MCP",
+        "Model Context Protocol — an open standard for connecting AI models to "
+        "external tools and data sources.",
+    ),
+    (
+        "API",
+        "Application Programming Interface — a defined contract that lets one program "
+        "call another.",
+    ),
+    (
+        "CI/CD",
+        "Continuous Integration / Continuous Delivery — automated pipelines that "
+        "build, test, and ship code.",
+    ),
+    (
+        "ML",
+        "Machine Learning — algorithms that learn patterns from data instead of being "
+        "explicitly programmed.",
+    ),
 ]
 
 
@@ -44,10 +69,10 @@ def seed() -> None:
     yesterday = (today - timedelta(days=1)).isoformat()
     tomorrow = (today + timedelta(days=1)).isoformat()
 
-    # Deck 1: Spanish Basics — populated, with a mix of due dates and reviews.
-    spanish = db.insert_deck("Spanish Basics")
+    # Deck 1: AI Glossary — populated, with a mix of due dates and reviews.
+    glossary = db.insert_deck("AI Glossary")
     cards = [
-        db.insert_card(spanish["id"], front, back) for front, back in SPANISH_CARDS
+        db.insert_card(glossary["id"], front, back) for front, back in GLOSSARY_CARDS
     ]
 
     # One card overdue (yesterday), one scheduled for the future (tomorrow).
