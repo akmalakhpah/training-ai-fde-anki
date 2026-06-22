@@ -13,6 +13,8 @@
       "Action": [
         "ecr:CreateRepository",
         "ecr:DescribeRepositories",
+        "ecr:GetRepositoryPolicy",
+        "ecr:SetRepositoryPolicy",
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:BatchGetImage",

@@ -42,6 +42,21 @@ echo "==> Ensuring ECR repository '${ECR_REPO}' exists"
 aws ecr describe-repositories --repository-names "${ECR_REPO}" --region "${REGION}" >/dev/null 2>&1 \
   || aws ecr create-repository --repository-name "${ECR_REPO}" --region "${REGION}" >/dev/null
 
+# A repo created via the CLI has no resource policy, so Lambda is refused when it tries
+# to pull the image ("Lambda does not have permission to access the ECR image"). Grant
+# the Lambda service pull access. Idempotent — safe to re-run.
+echo "==> Allowing Lambda to pull from '${ECR_REPO}'"
+aws ecr set-repository-policy --repository-name "${ECR_REPO}" --region "${REGION}" \
+  --policy-text '{
+    "Version": "2008-10-17",
+    "Statement": [{
+      "Sid": "LambdaECRImageRetrievalPolicy",
+      "Effect": "Allow",
+      "Principal": {"Service": "lambda.amazonaws.com"},
+      "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer"]
+    }]
+  }' >/dev/null
+
 # 2. Build + push the image -------------------------------------------------
 echo "==> Logging Docker in to ECR"
 aws ecr get-login-password --region "${REGION}" \
