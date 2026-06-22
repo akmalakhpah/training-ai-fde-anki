@@ -1,0 +1,15 @@
+# Keep the image small and — critically — keep secrets and local state out of it.
+.env
+.env.*
+!.env.example
+*.db
+.git
+.github
+.pytest_cache
+__pycache__
+**/__pycache__
+*.egg-info
+.venv
+.DS_Store
+**/.DS_Store
+BUILD_SPEC.md
