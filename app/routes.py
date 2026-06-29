@@ -12,10 +12,10 @@ from . import ai, db, services
 from .models import (
     Card,
     CardCreate,
-    CardDraft,
     Deck,
     DeckCreate,
     GenerateRequest,
+    GenerateResponse,
     ReviewCreate,
     Stats,
 )
@@ -70,14 +70,19 @@ def stats(deck_id: int) -> dict:
     return services.deck_stats(deck_id)
 
 
-@router.post("/decks/{deck_id}/generate", response_model=list[CardDraft])
-def generate(deck_id: int, payload: GenerateRequest) -> list[dict]:
+@router.post("/decks/{deck_id}/generate", response_model=GenerateResponse)
+def generate(deck_id: int, payload: GenerateRequest) -> GenerateResponse:
+    # GenerateRequest validation (count 1–20, topic non-empty/capped) is enforced
+    # by FastAPI before we get here — bad input returns 422 with no API call.
     if db.get_deck(deck_id) is None:
         raise HTTPException(status_code=404, detail="Deck not found")
     try:
-        drafts = ai.generate_cards(payload.topic, payload.count)
+        drafts, usage = ai.generate_cards(payload.topic, payload.count)
     except ai.AINotConfigured:
         raise HTTPException(
             status_code=503, detail="AI not configured — set ANTHROPIC_API_KEY"
         )
-    return [db.insert_card(deck_id, d["front"], d["back"]) for d in drafts]
+    except ai.AINoUsableCards:
+        raise HTTPException(status_code=502, detail="AI returned no usable cards")
+    cards = [db.insert_card(deck_id, d["front"], d["back"]) for d in drafts]
+    return GenerateResponse(cards=cards, usage=usage)
